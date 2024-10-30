@@ -5,7 +5,7 @@ Generate audio using
 > python .\wav.py --output generated.wav --mode generate
 
 Inspect header with
-python .\wav.py --input .\generated.wav
+> python .\wav.py --input .\generated.wav
 
 
 
