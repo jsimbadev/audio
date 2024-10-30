@@ -7,7 +7,7 @@ from ctypes import c_uint32, c_ushort, c_byte, c_char_p
 
 DUAL_CHANNEL = 2
 IEEE_FLOAT = 3
-PCM = 3
+PCM = 1
 DEFAULT_BITS_PER_SAMPLE = 16
 DEFAULT_SAMPLE_RATE = 44100
 DEFAULT_BLOCK_ID=b"RIFF"
@@ -94,36 +94,41 @@ def write_wav(data: bytes, output_f: str):
     
 
 def header_parser(wav_bytes: bytes):
-    wav_header_info = struct.unpack(f"{ENDIANNESS}4sI4s4sIHHIIHH4sI", wav_bytes)
-    return wav_header_info
+    wav_header_info = struct.unpack(f"{ENDIANNESS}4sI4s4sIHHIIHH4sI", wav_bytes[:44])
+    print(wav_header_info)
+    return
 
 
 def main():
     parser = ArgumentParser()
     parser.add_argument("--input")
     parser.add_argument("--output")
+    parser.add_argument("--mode", default='header', required=False)
     args = parser.parse_args()
 
+    if args.mode == 'header':
+        input_bytes = open(args.input, 'rb').read()
+        header_parser(input_bytes)
 
-    import math
-    from array import array
-    frequency = 250
-    max_amplitude = 32_700
-    duration = 5 # 5 seconds
-    audio = []
-    for i in range(DEFAULT_SAMPLE_RATE * duration):
-        amplitude = (i / DEFAULT_SAMPLE_RATE  ) * max_amplitude
-        signal = 1 #math.sin((2 * math.pi * i * frequency) / DEFAULT_SAMPLE_RATE)
+    if args.mode == 'generate':
+        assert args.output, "Must specify output file to generate wav for."
+        import math
+        from array import array
+        frequency = 250
+        max_amplitude = 32_700
+        duration = 5 # 5 seconds
+        audio = []
+        for i in range(DEFAULT_SAMPLE_RATE * duration):
+            amplitude = (i / DEFAULT_SAMPLE_RATE  ) * max_amplitude
+            signal = 1 #math.sin((2 * math.pi * i * frequency) / DEFAULT_SAMPLE_RATE)
 
-        channel_1 = amplitude * signal / 2
-        channel_2 = (max_amplitude - amplitude) * signal
-        # https://docs.python.org/3/library/struct.html
-        # little endian float16
-        audio.extend([struct.pack("<f", channel_1), struct.pack("<f", channel_2)])
+            channel_1 = amplitude * signal / 2
+            channel_2 = (max_amplitude - amplitude) * signal
+            # https://docs.python.org/3/library/struct.html
+            # little endian float16
+            audio.extend([struct.pack("<f", channel_1), struct.pack("<f", channel_2)])
 
-    num_samples = len(audio)
-
-    write_wav(b"".join(audio), args.output)
+        write_wav(b"".join(audio), args.output)
 
 
 if __name__ == "__main__":
